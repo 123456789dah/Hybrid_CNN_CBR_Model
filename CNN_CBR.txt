@@ -1,0 +1,117 @@
+from google.colab import drive
+drive.mount('/content/drive', force_remount=True)
+
+import os
+import numpy as np
+import shutil
+from tensorflow.keras.preprocessing.image import load_img, img_to_array
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
+import matplotlib.pyplot as plt
+import seaborn as sns
+import time
+
+# Define image parameters
+img_width, img_height = 150, 150
+input_shape = (img_width, img_height, 3)
+
+# Load and preprocess data
+def load_data(data_dir):
+    X, y, image_paths = [], [], []
+    for folder in ['TRAIN', 'TEST']:
+        path = os.path.join(data_dir, folder)
+        for class_folder in os.listdir(path):
+            class_path = os.path.join(path, class_folder)
+            if os.path.isdir(class_path):
+                label = int(class_folder.split(' ')[-1]) - 1
+                for image_file in os.listdir(class_path):
+                    try:
+                        image_path = os.path.join(class_path, image_file)
+                        image = load_img(image_path, target_size=(img_width, img_height))
+                        image_array = img_to_array(image) / 255.0
+                        X.append(image_array)
+                        y.append(label)
+                        image_paths.append(image_path)
+                    except Exception as e:
+                        print(f"Error loading image {image_file}: {e}")
+    return np.array(X), np.array(y), image_paths
+
+data_dir = "/content/drive/MyDrive/Data_Devided"
+X, y, image_paths = load_data(data_dir)
+X_train, X_test, y_train, y_test, paths_train, paths_test = train_test_split(X, y, image_paths, test_size=0.2, random_state=42)
+
+# Define and train the CNN model
+cnn_model = Sequential([
+    Conv2D(32, (3, 3), activation='relu', input_shape=input_shape),
+    MaxPooling2D(2, 2),
+    Conv2D(64, (3, 3), activation='relu'),
+    MaxPooling2D(2, 2),
+    Flatten(),
+    Dense(64, activation='relu'),
+    Dense(4, activation='softmax')
+])
+cnn_model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+history = cnn_model.fit(X_train, y_train, epochs=10, validation_split=0.2)
+
+# Define the CBR model and the Hybrid model
+cbr_model = KNeighborsClassifier(n_neighbors=3)
+
+class HybridModel:
+    def __init__(self, cnn, cbr):
+        self.cnn = cnn
+        self.cbr = cbr
+
+    def fit(self, X, y):
+        # Extract features for the entire dataset for CBR
+        features = self.cnn.predict(X)
+        self.cbr.fit(features, y)
+
+    def predict(self, X):
+        # Predict using extracted features
+        features = self.cnn.predict(X)
+        return self.cbr.predict(features)
+
+hybrid_model = HybridModel(cnn_model, cbr_model)
+hybrid_model.fit(X_train, y_train)
+
+# Evaluation
+features_test = cnn_model.predict(X_test)
+y_pred = cbr_model.predict(features_test)
+accuracy = accuracy_score(y_test, y_pred)
+print(f"Accuracy of the hybrid model: {accuracy:.4f}")
+print("Classification report for each category:")
+print(classification_report(y_test, y_pred))
+
+# Confusion Matrix
+cm = confusion_matrix(y_test, y_pred)
+plt.figure(figsize=(10, 8))
+# Using hex codes for specified colors
+cmap = sns.color_palette(['#90ee90', '#add8e6', '#d2b48c'])
+sns.heatmap(cm, annot=True, fmt="d", cmap=sns.color_palette(cmap))
+plt.title('Confusion Matrix with Hybrid CNN+CBR Model')
+plt.xlabel('Predicted labels')
+plt.ylabel('True labels')
+plt.show()
+
+# Plot Training Curves
+plt.figure(figsize=(12, 5))
+plt.subplot(1, 2, 1)
+plt.plot(history.history['accuracy'], label='Training Accuracy')
+plt.plot(history.history['val_accuracy'], label='Validation Accuracy')
+plt.title('Model Accuracy')
+plt.xlabel('Epoch')
+plt.ylabel('Accuracy')
+plt.legend()
+
+plt.subplot(1, 2, 2)
+plt.plot(history.history['loss'], label='Training Loss')
+plt.plot(history.history['val_loss'], label='Validation Loss')
+plt.title('Model Loss')
+plt.xlabel('Epoch')
+plt.ylabel('Loss')
+plt.legend()
+plt.tight_layout()
+plt.show()

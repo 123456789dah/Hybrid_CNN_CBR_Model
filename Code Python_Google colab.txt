@@ -1,0 +1,122 @@
+Code :
+# Mount Google Drive
+from google.colab import drive
+drive.mount('/content/drive', force_remount=True)
+
+# Import necessary libraries
+import os
+import numpy as np
+from tensorflow.keras.preprocessing.image import load_img, img_to_array
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+
+# Define constants
+IMG_WIDTH, IMG_HEIGHT = 150, 150
+INPUT_SHAPE = (IMG_WIDTH, IMG_HEIGHT, 3)
+DATA_DIR = "/content/drive/MyDrive/Data_Devided"
+
+# Data loading and preprocessing
+def load_data(data_dir, folders=['TRAIN', 'TEST']):
+    X, y = [], []
+    for folder in folders:
+        folder_path = os.path.join(data_dir, folder)
+        for label, class_folder in enumerate(sorted(os.listdir(folder_path))):
+            class_path = os.path.join(folder_path, class_folder)
+            if os.path.isdir(class_path):
+                for image_file in os.listdir(class_path):
+                    try:
+                        image_path = os.path.join(class_path, image_file)
+                        image = load_img(image_path, target_size=(IMG_WIDTH, IMG_HEIGHT))
+                        image_array = img_to_array(image) / 255.0
+                        X.append(image_array)
+                        y.append(label)
+                    except Exception as e:
+                        print(f"Error loading {image_file}: {e}")
+    return np.array(X), np.array(y)
+
+# Load data
+X, y = load_data(DATA_DIR)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Define CNN model
+cnn_model = Sequential([
+    Conv2D(32, (3, 3), activation='relu', input_shape=INPUT_SHAPE),
+    MaxPooling2D((2, 2)),
+    Conv2D(64, (3, 3), activation='relu'),
+    MaxPooling2D((2, 2)),
+    Conv2D(128, (3, 3), activation='relu'),
+    MaxPooling2D((2, 2)),
+    Flatten(),
+    Dense(256, activation='relu'),
+    Dropout(0.5),
+    Dense(4, activation='softmax')
+])
+
+cnn_model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+
+# Train the CNN
+history = cnn_model.fit(X_train, y_train, epochs=10, validation_split=0.2)
+
+# KNN-based CBR integration
+class HybridModel:
+    def __init__(self, cnn, k_neighbors=3):
+        self.cnn = cnn
+        self.cbr = KNeighborsClassifier(n_neighbors=k_neighbors)
+
+    def fit(self, X, y):
+        features = self.cnn.predict(X)
+        self.cbr.fit(features, y)
+
+    def predict(self, X):
+        features = self.cnn.predict(X)
+        return self.cbr.predict(features)
+
+# Train the hybrid model
+hybrid_model = HybridModel(cnn_model)
+hybrid_model.fit(X_train, y_train)
+
+# Evaluate the hybrid model
+y_pred = hybrid_model.predict(X_test)
+accuracy = accuracy_score(y_test, y_pred)
+print("Hybrid model accuracy:", accuracy)
+
+# Confusion Matrix
+cm = confusion_matrix(y_test, y_pred)
+plt.figure(figsize=(10, 8))
+sns.heatmap(cm, annot=True, fmt="d", cmap="coolwarm", xticklabels=range(4), yticklabels=range(4))
+plt.title("Confusion Matrix")
+plt.xlabel("Predicted")
+plt.ylabel("True")
+plt.show()
+
+# Plot accuracy and loss curves
+plt.figure(figsize=(12, 5))
+
+# Accuracy Curve
+plt.subplot(1, 2, 1)
+plt.plot(history.history['accuracy'], label='Training Accuracy')
+plt.plot(history.history['val_accuracy'], label='Validation Accuracy')
+plt.title('Model Accuracy')
+plt.xlabel('Epochs')
+plt.ylabel('Accuracy')
+plt.legend()
+
+# Loss Curve
+plt.subplot(1, 2, 2)
+plt.plot(history.history['loss'], label='Training Loss')
+plt.plot(history.history['val_loss'], label='Validation Loss')
+plt.title('Model Loss')
+plt.xlabel('Epochs')
+plt.ylabel('Loss')
+plt.legend()
+
+plt.tight_layout()
+plt.show()
+
+# Save the model to upload to GitHub
+cnn_model.save('/content/drive/MyDrive/hybrid_cnn_model.h5')

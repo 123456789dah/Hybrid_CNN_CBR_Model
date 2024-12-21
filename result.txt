@@ -1,0 +1,27 @@
+Result 
+Mounted at /content/drive
+/usr/local/lib/python3.10/dist-packages/keras/src/layers/convolutional/base_conv.py:107: UserWarning: Do not pass an `input_shape`/`input_dim` argument to a layer. When using Sequential models, prefer using an `Input(shape)` object as the first layer in the model instead.
+  super().__init__(activity_regularizer=activity_regularizer, **kwargs)
+Epoch 1/10
+28/28 ━━━━━━━━━━━━━━━━━━━━ 5s 84ms/step - accuracy: 0.2617 - loss: 1.8532 - val_accuracy: 0.2991 - val_loss: 1.3365
+Epoch 2/10
+28/28 ━━━━━━━━━━━━━━━━━━━━ 2s 28ms/step - accuracy: 0.4816 - loss: 1.1769 - val_accuracy: 0.6696 - val_loss: 0.7646
+Epoch 3/10
+28/28 ━━━━━━━━━━━━━━━━━━━━ 1s 25ms/step - accuracy: 0.6907 - loss: 0.7664 - val_accuracy: 0.8348 - val_loss: 0.4742
+Epoch 4/10
+28/28 ━━━━━━━━━━━━━━━━━━━━ 1s 28ms/step - accuracy: 0.8467 - loss: 0.4630 - val_accuracy: 0.8884 - val_loss: 0.3019
+Epoch 5/10
+28/28 ━━━━━━━━━━━━━━━━━━━━ 1s 26ms/step - accuracy: 0.8538 - loss: 0.3731 - val_accuracy: 0.9241 - val_loss: 0.2377
+Epoch 6/10
+28/28 ━━━━━━━━━━━━━━━━━━━━ 1s 26ms/step - accuracy: 0.9062 - loss: 0.2738 - val_accuracy: 0.9375 - val_loss: 0.1975
+Epoch 7/10
+28/28 ━━━━━━━━━━━━━━━━━━━━ 1s 26ms/step - accuracy: 0.9250 - loss: 0.2094 - val_accuracy: 0.9330 - val_loss: 0.1731
+Epoch 8/10
+28/28 ━━━━━━━━━━━━━━━━━━━━ 1s 26ms/step - accuracy: 0.9477 - loss: 0.1719 - val_accuracy: 0.9420 - val_loss: 0.1477
+Epoch 9/10
+28/28 ━━━━━━━━━━━━━━━━━━━━ 1s 29ms/step - accuracy: 0.9348 - loss: 0.1561 - val_accuracy: 0.9688 - val_loss: 0.0903
+Epoch 10/10
+28/28 ━━━━━━━━━━━━━━━━━━━━ 1s 25ms/step - accuracy: 0.9632 - loss: 0.1013 - val_accuracy: 0.9688 - val_loss: 0.0943
+35/35 ━━━━━━━━━━━━━━━━━━━━ 1s 7ms/step
+9/9 ━━━━━━━━━━━━━━━━━━━━ 0s 39ms/step
+Hybrid model accuracy: 0.9786476868327402
